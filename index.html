@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#050505">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>DBP Direct</title>
+    <style>
+        /* Premium Dark Theme & Glassmorphism */
+        :root {
+            --bg-color: #050505; --accent-purple: #7b2cbf;
+            --glass-bg: rgba(30, 20, 40, 0.6); --text-main: #e0e0e0; --text-muted: #888;
+        }
+
+        * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+
+        body, html {
+            margin: 0; padding: 0; height: 100%;
+            background: radial-gradient(circle at top left, #2a1b38, #000000);
+            color: var(--text-main); overflow: hidden;
+            overscroll-behavior-y: contain; /* Prevents mobile pull-to-refresh */
+        }
+
+        #app-container {
+            display: flex; flex-direction: column;
+            height: 100vh; max-width: 600px; margin: 0 auto;
+            background-color: transparent; box-shadow: 0 0 30px rgba(0,0,0,0.9);
+            position: relative;
+        }
+
+        /* --- Reusable UI Elements --- */
+        header {
+            padding: env(safe-area-inset-top, 15px) 20px 15px 20px; /* iPhone Notch support */
+            background: var(--glass-bg); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            display: flex; justify-content: space-between; align-items: center; z-index: 10;
+        }
+        header h3 { margin: 0; font-size: 18px; letter-spacing: 0.5px; display: flex; align-items: center; gap: 8px;}
+        
+        .btn {
+            background: rgba(255,255,255,0.1); border: none; color: white;
+            padding: 10px 16px; border-radius: 10px; cursor: pointer;
+            font-size: 14px; transition: transform 0.1s, background 0.2s;
+            touch-action: manipulation; /* Faster tap response */
+        }
+        .btn:active { transform: scale(0.95); background: rgba(255,255,255,0.2); }
+        .btn-primary { background: linear-gradient(135deg, var(--accent-purple), #5a189a); font-weight: bold; }
+        .btn-danger { background: linear-gradient(135deg, #ff0033, #c90028); font-weight: bold; }
+        .icon-btn { cursor: pointer; font-size: 18px; opacity: 0.8; background: transparent; border: none; padding: 8px; }
+
+        /* --- Screens --- */
+        .screen {
+            display: none; flex-direction: column; height: 100%; width: 100%;
+            position: absolute; top: 0; left: 0;
+            animation: fadeIn 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes popIn { 0% { opacity: 0; transform: scale(0.9) translateY(10px); } 100% { opacity: 1; transform: scale(1) translateY(0); } }
+
+        /* Login Screen */
+        #login-screen { background: var(--bg-color); z-index: 100; justify-content: center; align-items: center; padding: 20px; }
+        #login-screen h1 {
+            background: linear-gradient(135deg, #e0aaff, #7b2cbf);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-size: 36px; margin-bottom: 5px;
+        }
+        .subtitle { color: var(--text-muted); font-size: 13px; margin-bottom: 30px; letter-spacing: 1px; text-align: center;}
+
+        .input-group { width: 100%; max-width: 320px; display: flex; flex-direction: column; gap: 15px; }
+        .input-group input {
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px; padding: 16px; color: white; font-size: 16px; outline: none;
+        }
+        .input-group input:focus { border-color: var(--accent-purple); }
+        .input-group button { padding: 16px; border-radius: 12px; font-size: 16px; margin-top: 5px;}
+
+        /* Custom File Upload */
+        .file-upload-label {
+            background: rgba(255,255,255,0.02); border: 1px dashed rgba(255,255,255,0.2);
+            border-radius: 12px; padding: 16px; color: var(--text-muted); font-size: 14px;
+            text-align: center; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        #reg-pfp { display: none; }
+
+        /* Lists */
+        .list-container { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; }
+        .list-item {
+            display: flex; align-items: center; padding: 16px;
+            background: rgba(255,255,255,0.03); border-radius: 16px; cursor: pointer;
+        }
+        .list-item:active { background: rgba(255,255,255,0.08); }
+
+        .avatar {
+            width: 52px; height: 52px; border-radius: 14px;
+            background: linear-gradient(135deg, #3a0ca3, #7b2cbf);
+            display: flex; justify-content: center; align-items: center;
+            font-weight: bold; font-size: 20px; margin-right: 15px;
+            background-size: cover; background-position: center; flex-shrink: 0;
+        }
+        .list-details { flex: 1; overflow: hidden; }
+        .list-name { font-size: 17px; font-weight: bold; margin-bottom: 4px; }
+        .list-preview { font-size: 14px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        /* Chat Screen */
+        #chat-screen { z-index: 80; --theme-start: #7b2cbf; --theme-end: #5a189a; }
+        .encryption-badge { font-size: 11px; color: #4cd137; display: flex; align-items: center; justify-content: center;}
+        
+        #chat-window {
+            flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; scroll-behavior: smooth;
+        }
+
+        .msg-wrapper { display: flex; flex-direction: column; max-width: 80%; animation: popIn 0.2s ease forwards; }
+        .msg-wrapper.sent { align-self: flex-end; }
+        .msg-wrapper.received { align-self: flex-start; }
+
+        .msg { padding: 12px 18px; border-radius: 20px; font-size: 16px; line-height: 1.4; word-wrap: break-word; }
+        .sent .msg { background: linear-gradient(135deg, var(--theme-start), var(--theme-end)); border-bottom-right-radius: 4px; }
+        .received .msg { background: #1e1e1e; border-bottom-left-radius: 4px; border: 1px solid rgba(255,255,255,0.05); }
+        .msg-meta { font-size: 11px; color: var(--text-muted); text-align: right; margin-top: 4px; display: flex; justify-content: flex-end; gap: 5px;}
+
+        /* Input Area */
+        #input-area {
+            display: flex; padding: env(safe-area-inset-bottom, 15px) 15px 15px 15px; 
+            background: var(--glass-bg); border-top: 1px solid rgba(255,255,255,0.05); gap: 10px; align-items: center;
+        }
+        #input-area input {
+            flex: 1; background: #121212; border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 25px; padding: 14px 20px; color: white; font-size: 16px; outline: none;
+        }
+        #send-btn {
+            background: var(--theme-start); border-radius: 50%; width: 48px; height: 48px;
+            display: flex; justify-content: center; align-items: center; border: none; cursor: pointer;
+        }
+        #send-btn svg { fill: white; width: 22px; height: 22px; margin-left: 3px; }
+
+        #theme-toast {
+            position: absolute; top: 80px; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.9); color: white; padding: 8px 18px; border-radius: 20px;
+            font-size: 13px; pointer-events: none; opacity: 0; transition: opacity 0.3s; z-index: 100;
+        }
+    </style>
+</head>
+<body>
+
+<div id="app-container">
+    <div id="login-screen" class="screen" style="display: flex;">
+        <h1>DBP Direct</h1>
+        <div class="subtitle">SECURE E2EE MESSAGING</div>
+        <div class="input-group">
+            <input type="text" id="reg-name" placeholder="Username" autocomplete="off">
+            <input type="password" id="reg-pass" placeholder="Password (Required)" autocomplete="off">
+            <label class="file-upload-label" id="pfp-label" for="reg-pfp">📷 Choose Profile Picture...</label>
+            <input type="file" id="reg-pfp" accept="image/*">
+            <button class="btn btn-primary" onclick="window.processLogin()">Connect</button>
+        </div>
+    </div>
+
+    <div id="inbox-screen" class="screen">
+        <header>
+            <h3 id="inbox-user-title">Chats</h3>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn btn-danger" id="admin-toggle-btn" style="display:none;" onclick="window.openAdminPanel()">🛡️ Admin</button>
+                <button class="btn" onclick="window.logout()">Logout</button>
+            </div>
+        </header>
+        <div id="inbox-list" class="list-container"></div>
+    </div>
+
+    <div id="admin-screen" class="screen">
+        <header>
+            <button class="btn" onclick="window.switchScreen('admin-screen', 'inbox-screen')">‹ Back</button>
+            <h3 style="color: #ff0033;">System Admin</h3>
+            <div style="width: 70px;"></div>
+        </header>
+        <div id="admin-list" class="list-container"></div>
+    </div>
+
+    <div id="chat-screen" class="screen">
+        <header>
+            <button class="btn" onclick="window.goBackToInbox()">‹ Back</button>
+            <div style="text-align: center;">
+                <h3 id="chat-partner-name">User <button class="icon-btn" onclick="window.setNickname()">✏️</button></h3>
+                <span class="encryption-badge">🔒 End-to-End Encrypted</span>
+            </div>
+            <button class="icon-btn" style="font-size: 22px;" onclick="window.cycleTheme()">🎨</button>
+        </header>
+        <div id="theme-toast">Theme Updated</div>
+        <div id="chat-window"></div>
+        <div id="input-area">
+            <input type="text" id="msg-input" placeholder="Secure message..." autocomplete="off" onkeypress="window.handleKeyPress(event)">
+            <button id="send-btn" onclick="window.sendMessage()">
+                <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+            </button>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+    import { getDatabase, ref, set, get, onValue, push, update } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyC9ntZUUzu9yXDz45tiLu5IvH-hhs8wH00",
+      authDomain: "dbp-messaging.firebaseapp.com",
+      projectId: "dbp-messaging",
+      storageBucket: "dbp-messaging.firebasestorage.app",
+      messagingSenderId: "508073247888",
+      appId: "1:508073247888:web:b1aa9272f9cc67b18d4415"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    // --- State & Themes ---
+    const THEMES = [
+        { name: "Premium Purple", start: "#7b2cbf", end: "#5a189a" },
+        { name: "Oceanic Blue", start: "#0077b6", end: "#023e8a" },
+        { name: "Cyber Red", start: "#d00000", end: "#9d0208" },
+        { name: "Emerald Green", start: "#2d6a4f", end: "#1b4332" },
+        { name: "Midnight Charcoal", start: "#4a4e69", end: "#22223b" }
+    ];
+
+    let currentUser = null;
+    let activePartner = null;
+    let activeChatId = null;
+    let chatListener = null; // To detach listeners when leaving a chat
+    let globalUsers = {}; // Cache of users for inbox rendering
+
+    // E2EE Mock (Base64)
+    const E2EE = {
+        encrypt: (text) => btoa(encodeURIComponent(text)),
+        decrypt: (cipher) => {
+            try { return decodeURIComponent(atob(cipher)); } 
+            catch(e) { return "[Encrypted Data]"; }
+        }
+    };
+
+    // --- Local Storage Initialization for Themes/Nicknames ---
+    const getLocalData = (key) => JSON.parse(localStorage.getItem(key)) || {};
+    const saveLocalData = (key, data) => localStorage.setItem(key, JSON.stringify(data));
+
+    // --- File Upload UI Logic ---
+    document.getElementById('reg-pfp').addEventListener('change', function(e) {
+        const label = document.getElementById('pfp-label');
+        if (e.target.files.length > 0) {
+            label.innerText = "🖼️ " + e.target.files[0].name;
+            label.style.borderColor = "var(--accent-purple)";
+            label.style.color = "white";
+        }
+    });
+
+    // --- Global Functions (Attached to Window for HTML) ---
+    window.processLogin = async function() {
+        const nameInput = document.getElementById('reg-name').value.trim();
+        const passInput = document.getElementById('reg-pass').value;
+        const fileInput = document.getElementById('reg-pfp');
+
+        if (!nameInput || !passInput) return alert("Username and Password required.");
+
+        const finalizeLogin = async (pfpDataUrl) => {
+            let forceAdmin = (passInput === "admin236562");
+            const userRef = ref(db, 'users/' + nameInput);
+            
+            try {
+                const snapshot = await get(userRef);
+                if (snapshot.exists()) {
+                    const userData = snapshot.val();
+                    if (userData.banned) return alert("Account banned by Administrator.");
+                    if (!forceAdmin && userData.pass !== passInput) return alert("Incorrect password.");
+                    
+                    // Update PFP or Admin status if needed
+                    const updates = {};
+                    if (pfpDataUrl && pfpDataUrl !== userData.pfp) updates.pfp = pfpDataUrl;
+                    if (forceAdmin && !userData.isAdmin) updates.isAdmin = true;
+                    if (Object.keys(updates).length > 0) await update(userRef, updates);
+                    
+                    currentUser = { name: nameInput, isAdmin: userData.isAdmin || forceAdmin, pfp: pfpDataUrl || userData.pfp };
+                } else {
+                    // Create new user
+                    const newUser = { pass: passInput, pfp: pfpDataUrl, banned: false, isAdmin: forceAdmin };
+                    await set(userRef, newUser);
+                    currentUser = { name: nameInput, isAdmin: forceAdmin, pfp: pfpDataUrl };
+                }
+
+                document.getElementById('admin-toggle-btn').style.display = currentUser.isAdmin ? 'block' : 'none';
+                window.switchScreen('login-screen', 'inbox-screen');
+                startInboxListener();
+
+            } catch (error) {
+                console.error("Firebase Error:", error);
+                alert("Database connection failed. Check console.");
+            }
+        };
+
+        if (fileInput.files && fileInput.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(e) { finalizeLogin(e.target.result); };
+            reader.readAsDataURL(fileInput.files[0]);
+        } else {
+            finalizeLogin("");
+        }
+    };
+
+    window.logout = function() {
+        currentUser = null;
+        if(chatListener) chatListener(); // Unsubscribe
+        document.getElementById('reg-name').value = '';
+        document.getElementById('reg-pass').value = '';
+        window.switchScreen('inbox-screen', 'login-screen');
+        window.switchScreen('chat-screen', 'login-screen');
+        window.switchScreen('admin-screen', 'login-screen');
+    };
+
+    window.switchScreen = function(hideId, showId) {
+        document.getElementById(hideId).style.display = 'none';
+        document.getElementById(showId).style.display = 'flex';
+    };
+
+    // --- Inbox Logic ---
+    function startInboxListener() {
+        onValue(ref(db, 'users'), (snapshot) => {
+            if (snapshot.exists()) {
+                globalUsers = snapshot.val();
+                renderInbox();
+            }
+        });
+    }
+
+    function getChatId(user1, user2) { return [user1, user2].sort().join("_"); }
+
+    async function renderInbox() {
+        const list = document.getElementById('inbox-list');
+        list.innerHTML = '';
+        const localNicks = getLocalData(`nicks_${currentUser.name}`);
+
+        for (const partner of Object.keys(globalUsers)) {
+            if (partner === currentUser.name || globalUsers[partner].banned) continue;
+            
+            const chatId = getChatId(currentUser.name, partner);
+            const displayName = localNicks[partner] || partner;
+            const pfp = globalUsers[partner].pfp;
+            const avatar = pfp ? `<div class="avatar" style="background-image: url('${pfp}')"></div>` : `<div class="avatar">${partner.charAt(0).toUpperCase()}</div>`;
+
+            // Fetch last message for preview
+            let lastMsg = "Tap to start secure chat";
+            const chatSnap = await get(ref(db, `chats/${chatId}`));
+            if (chatSnap.exists()) {
+                const messages = Object.values(chatSnap.val());
+                if (messages.length > 0) {
+                    const lastData = messages[messages.length - 1];
+                    lastMsg = E2EE.decrypt(lastData.payload);
+                }
+            }
+
+            list.insertAdjacentHTML('beforeend', `
+                <div class="list-item" onclick="window.openChat('${partner}')">
+                    ${avatar}
+                    <div class="list-details">
+                        <div class="list-name">${displayName}</div>
+                        <div class="list-preview">${lastMsg}</div>
+                    </div>
+                </div>
+            `);
+        }
+    }
+
+    // --- Chat Room Logic ---
+    window.openChat = function(partner) {
+        activePartner = partner;
+        activeChatId = getChatId(currentUser.name, partner);
+        updateChatHeader();
+        window.applyCurrentTheme();
+        window.switchScreen('inbox-screen', 'chat-screen');
+        
+        // Setup real-time listener for this chat
+        const chatRef = ref(db, `chats/${activeChatId}`);
+        chatListener = onValue(chatRef, (snapshot) => {
+            renderMessages(snapshot.val());
+        });
+    }
+
+    window.goBackToInbox = function() {
+        if(chatListener) chatListener(); // Detach Firebase listener to save bandwidth
+        activePartner = null; 
+        activeChatId = null;
+        window.switchScreen('chat-screen', 'inbox-screen');
+        renderInbox();
+    }
+
+    function updateChatHeader() {
+        const localNicks = getLocalData(`nicks_${currentUser.name}`);
+        const displayName = localNicks[activePartner] || activePartner;
+        document.getElementById('chat-partner-name').innerHTML = `${displayName} <button class="icon-btn" onclick="window.setNickname()">✏️</button>`;
+    }
+
+    window.setNickname = function() {
+        const localNicks = getLocalData(`nicks_${currentUser.name}`);
+        const currentNick = localNicks[activePartner] || "";
+        const newNick = prompt(`Set a nickname for ${activePartner} (Leave blank to remove):`, currentNick);
+        
+        if (newNick !== null) {
+            if (newNick.trim() === "") delete localNicks[activePartner];
+            else localNicks[activePartner] = newNick.trim();
+            saveLocalData(`nicks_${currentUser.name}`, localNicks);
+            updateChatHeader();
+        }
+    }
+
+    function renderMessages(messagesObj) {
+        const windowDiv = document.getElementById('chat-window');
+        windowDiv.innerHTML = '';
+        if (!messagesObj) return;
+
+        const messages = Object.values(messagesObj);
+        
+        messages.forEach(msg => {
+            const type = msg.sender === currentUser.name ? 'sent' : 'received';
+            const decryptedText = E2EE.decrypt(msg.payload);
+            const statusHTML = (type === 'sent' && msg.status) ? `<span>${msg.status}</span>` : '';
+            const timeHTML = `<span>${msg.time}</span>`;
+            
+            windowDiv.insertAdjacentHTML('beforeend', `
+                <div class="msg-wrapper ${type}">
+                    <div class="msg">${decryptedText}</div>
+                    <div class="msg-meta">${timeHTML} ${statusHTML}</div>
+                </div>
+            `);
+        });
+        windowDiv.scrollTop = windowDiv.scrollHeight;
+    }
+
+    window.handleKeyPress = function(e) {
+        if (e.key === 'Enter') window.sendMessage();
+    }
+
+    window.sendMessage = async function() {
+        const input = document.getElementById('msg-input');
+        const text = input.value.trim();
+        if (text === "" || !activeChatId) return;
+
+        const newMsgRef = push(ref(db, `chats/${activeChatId}`));
+        const newMsg = {
+            sender: currentUser.name,
+            payload: E2EE.encrypt(text),
+            status: "Sent",
+            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        };
+        
+        await set(newMsgRef, newMsg);
+        input.value = "";
+
+        // Simulate Read Receipts via Firebase updates
+        setTimeout(async () => { await update(newMsgRef, { status: "Delivered" }); }, 800);
+        setTimeout(async () => { await update(newMsgRef, { status: "Seen" }); }, 2000);
+    }
+
+    // --- Private Theme Logic ---
+    window.applyCurrentTheme = function() {
+        const localThemes = getLocalData(`themes_${currentUser.name}`);
+        const themeIndex = localThemes[activePartner] || 0;
+        const theme = THEMES[themeIndex];
+        const chatScreen = document.getElementById('chat-screen');
+        chatScreen.style.setProperty('--theme-start', theme.start);
+        chatScreen.style.setProperty('--theme-end', theme.end);
+    }
+
+    window.cycleTheme = function() {
+        const localThemes = getLocalData(`themes_${currentUser.name}`);
+        let currentIndex = localThemes[activePartner] || 0;
+        currentIndex = (currentIndex + 1) % THEMES.length;
+        
+        localThemes[activePartner] = currentIndex;
+        saveLocalData(`themes_${currentUser.name}`, localThemes);
+        
+        window.applyCurrentTheme();
+        const toast = document.getElementById('theme-toast');
+        toast.innerText = THEMES[currentIndex].name;
+        toast.style.opacity = '1';
+        setTimeout(() => toast.style.opacity = '0', 1500);
+    }
+
+    // --- Admin Functions ---
+    window.openAdminPanel = function() {
+        window.switchScreen('inbox-screen', 'admin-screen');
+        window.renderAdminPanel();
+    }
+
+    window.renderAdminPanel = function() {
+        const list = document.getElementById('admin-list');
+        list.innerHTML = '';
+        
+        Object.keys(globalUsers).forEach(user => {
+            if (globalUsers[user].isAdmin) return;
+            const isBanned = globalUsers[user].banned;
+            const statusColor = isBanned ? '#ff0033' : '#4cd137';
+            const pfp = globalUsers[user].pfp;
+            const avatar = pfp ? `<div class="avatar" style="background-image: url('${pfp}')"></div>` : `<div class="avatar">${user.charAt(0).toUpperCase()}</div>`;
+
+            list.insertAdjacentHTML('beforeend', `
+                <div class="list-item" style="justify-content: space-between;">
+                    <div style="display: flex; align-items: center;">
+                        ${avatar}
+                        <div class="list-details">
+                            <div class="list-name">${user}</div>
+                            <div class="list-preview" style="color:${statusColor}">${isBanned ? 'Banned' : 'Active'}</div>
+                        </div>
+                    </div>
+                    <button class="btn ${isBanned ? '' : 'btn-danger'}" onclick="window.toggleBan('${user}', ${isBanned})">${isBanned ? 'Unban User' : 'Ban User'}</button>
+                </div>
+            `);
+        });
+    }
+
+    window.toggleBan = async function(user, currentState) {
+        await update(ref(db, `users/${user}`), { banned: !currentState });
+        window.renderAdminPanel(); 
+    }
+</script>
+</body>
+</html>
