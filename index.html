@@ -486,16 +486,17 @@
         if (e.key === 'Enter') window.sendMessage();
     }
 
-    window.sendMessage = async function() {
+   window.sendMessage = async function() {
         const input = document.getElementById('msg-input');
         const text = input.value.trim();
         if (text === "" || !activeChatId) return;
 
+        // Push the new message to Firebase with a strict "Sent" status
         const newMsgRef = push(ref(db, `chats/${activeChatId}`));
         const newMsg = {
             sender: currentUser.name,
             payload: E2EE.encrypt(text),
-            status: "Sent",
+            status: "Sent", // This will stay "Sent" until the other device physically opens this chat
             time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         };
         
