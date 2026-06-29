@@ -14,28 +14,32 @@
             --glass-bg: rgba(30, 20, 40, 0.6); --text-main: #e0e0e0; --text-muted: #888;
         }
 
-        * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        *, *::before, *::after { 
+            box-sizing: border-box; /* Crucial for preventing mobile overflow */
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+        }
 
         body, html {
-            margin: 0; padding: 0; height: 100%;
+            margin: 0; padding: 0; height: 100%; width: 100%;
             background: radial-gradient(circle at top left, #2a1b38, #000000);
             color: var(--text-main); overflow: hidden;
-            overscroll-behavior-y: contain; /* Prevents mobile pull-to-refresh */
+            overscroll-behavior-y: contain; 
         }
 
         #app-container {
             display: flex; flex-direction: column;
-            height: 100vh; max-width: 600px; margin: 0 auto;
+            height: 100vh; width: 100vw; max-width: 600px; margin: 0 auto;
             background-color: transparent; box-shadow: 0 0 30px rgba(0,0,0,0.9);
-            position: relative;
+            position: relative; overflow: hidden;
         }
 
         /* --- Reusable UI Elements --- */
         header {
-            padding: env(safe-area-inset-top, 15px) 20px 15px 20px; /* iPhone Notch support */
+            padding: env(safe-area-inset-top, 15px) 20px 15px 20px; 
             background: var(--glass-bg); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
             border-bottom: 1px solid rgba(255,255,255,0.05);
             display: flex; justify-content: space-between; align-items: center; z-index: 10;
+            width: 100%;
         }
         header h3 { margin: 0; font-size: 18px; letter-spacing: 0.5px; display: flex; align-items: center; gap: 8px;}
         
@@ -43,7 +47,7 @@
             background: rgba(255,255,255,0.1); border: none; color: white;
             padding: 10px 16px; border-radius: 10px; cursor: pointer;
             font-size: 14px; transition: transform 0.1s, background 0.2s;
-            touch-action: manipulation; /* Faster tap response */
+            touch-action: manipulation; 
         }
         .btn:active { transform: scale(0.95); background: rgba(255,255,255,0.2); }
         .btn-primary { background: linear-gradient(135deg, var(--accent-purple), #5a189a); font-weight: bold; }
@@ -71,24 +75,24 @@
         .input-group { width: 100%; max-width: 320px; display: flex; flex-direction: column; gap: 15px; }
         .input-group input {
             background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 12px; padding: 16px; color: white; font-size: 16px; outline: none;
+            border-radius: 12px; padding: 16px; color: white; font-size: 16px; outline: none; width: 100%;
         }
         .input-group input:focus { border-color: var(--accent-purple); }
-        .input-group button { padding: 16px; border-radius: 12px; font-size: 16px; margin-top: 5px;}
+        .input-group button { padding: 16px; border-radius: 12px; font-size: 16px; margin-top: 5px; width: 100%;}
 
         /* Custom File Upload */
         .file-upload-label {
             background: rgba(255,255,255,0.02); border: 1px dashed rgba(255,255,255,0.2);
             border-radius: 12px; padding: 16px; color: var(--text-muted); font-size: 14px;
-            text-align: center; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            text-align: center; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%;
         }
         #reg-pfp { display: none; }
 
         /* Lists */
-        .list-container { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; }
+        .list-container { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; width: 100%; }
         .list-item {
             display: flex; align-items: center; padding: 16px;
-            background: rgba(255,255,255,0.03); border-radius: 16px; cursor: pointer;
+            background: rgba(255,255,255,0.03); border-radius: 16px; cursor: pointer; width: 100%;
         }
         .list-item:active { background: rgba(255,255,255,0.08); }
 
@@ -100,7 +104,7 @@
             background-size: cover; background-position: center; flex-shrink: 0;
         }
         .list-details { flex: 1; overflow: hidden; }
-        .list-name { font-size: 17px; font-weight: bold; margin-bottom: 4px; }
+        .list-name { font-size: 17px; font-weight: bold; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .list-preview { font-size: 14px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
         /* Chat Screen */
@@ -108,10 +112,10 @@
         .encryption-badge { font-size: 11px; color: #4cd137; display: flex; align-items: center; justify-content: center;}
         
         #chat-window {
-            flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; scroll-behavior: smooth;
+            flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; scroll-behavior: smooth; width: 100%;
         }
 
-        .msg-wrapper { display: flex; flex-direction: column; max-width: 80%; animation: popIn 0.2s ease forwards; }
+        .msg-wrapper { display: flex; flex-direction: column; max-width: 85%; animation: popIn 0.2s ease forwards; }
         .msg-wrapper.sent { align-self: flex-end; }
         .msg-wrapper.received { align-self: flex-start; }
 
@@ -123,15 +127,15 @@
         /* Input Area */
         #input-area {
             display: flex; padding: env(safe-area-inset-bottom, 15px) 15px 15px 15px; 
-            background: var(--glass-bg); border-top: 1px solid rgba(255,255,255,0.05); gap: 10px; align-items: center;
+            background: var(--glass-bg); border-top: 1px solid rgba(255,255,255,0.05); gap: 10px; align-items: center; width: 100%;
         }
         #input-area input {
             flex: 1; background: #121212; border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 25px; padding: 14px 20px; color: white; font-size: 16px; outline: none;
+            border-radius: 25px; padding: 14px 20px; color: white; font-size: 16px; outline: none; width: 100%;
         }
         #send-btn {
             background: var(--theme-start); border-radius: 50%; width: 48px; height: 48px;
-            display: flex; justify-content: center; align-items: center; border: none; cursor: pointer;
+            display: flex; justify-content: center; align-items: center; border: none; cursor: pointer; flex-shrink: 0;
         }
         #send-btn svg { fill: white; width: 22px; height: 22px; margin-left: 3px; }
 
@@ -180,8 +184,8 @@
     <div id="chat-screen" class="screen">
         <header>
             <button class="btn" onclick="window.goBackToInbox()">‹ Back</button>
-            <div style="text-align: center;">
-                <h3 id="chat-partner-name">User <button class="icon-btn" onclick="window.setNickname()">✏️</button></h3>
+            <div style="text-align: center; max-width: 60%;">
+                <h3 id="chat-partner-name" style="justify-content: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">User <button class="icon-btn" onclick="window.setNickname()">✏️</button></h3>
                 <span class="encryption-badge">🔒 End-to-End Encrypted</span>
             </div>
             <button class="icon-btn" style="font-size: 22px;" onclick="window.cycleTheme()">🎨</button>
@@ -225,8 +229,8 @@
     let currentUser = null;
     let activePartner = null;
     let activeChatId = null;
-    let chatListener = null; // To detach listeners when leaving a chat
-    let globalUsers = {}; // Cache of users for inbox rendering
+    let chatListener = null; 
+    let globalUsers = {}; 
 
     // E2EE Mock (Base64)
     const E2EE = {
@@ -237,9 +241,19 @@
         }
     };
 
-    // --- Local Storage Initialization for Themes/Nicknames ---
+    // --- Local Storage Integration ---
+    const SESSION_KEY = "dbp_session";
     const getLocalData = (key) => JSON.parse(localStorage.getItem(key)) || {};
     const saveLocalData = (key, data) => localStorage.setItem(key, JSON.stringify(data));
+
+    // Auto-Login Check on Load
+    window.onload = async () => {
+        const savedSession = JSON.parse(localStorage.getItem(SESSION_KEY));
+        if (savedSession && savedSession.name && savedSession.pass) {
+            // Bypass UI and login silently
+            await window.processLogin(savedSession);
+        }
+    };
 
     // --- File Upload UI Logic ---
     document.getElementById('reg-pfp').addEventListener('change', function(e) {
@@ -252,9 +266,10 @@
     });
 
     // --- Global Functions (Attached to Window for HTML) ---
-    window.processLogin = async function() {
-        const nameInput = document.getElementById('reg-name').value.trim();
-        const passInput = document.getElementById('reg-pass').value;
+    // Now accepts optional autoData for the auto-login flow
+    window.processLogin = async function(autoData = null) {
+        const nameInput = autoData ? autoData.name : document.getElementById('reg-name').value.trim();
+        const passInput = autoData ? autoData.pass : document.getElementById('reg-pass').value;
         const fileInput = document.getElementById('reg-pfp');
 
         if (!nameInput || !passInput) return alert("Username and Password required.");
@@ -267,10 +282,15 @@
                 const snapshot = await get(userRef);
                 if (snapshot.exists()) {
                     const userData = snapshot.val();
-                    if (userData.banned) return alert("Account banned by Administrator.");
-                    if (!forceAdmin && userData.pass !== passInput) return alert("Incorrect password.");
+                    if (userData.banned) {
+                        localStorage.removeItem(SESSION_KEY);
+                        return alert("Account banned by Administrator.");
+                    }
+                    if (!forceAdmin && userData.pass !== passInput) {
+                        localStorage.removeItem(SESSION_KEY);
+                        return alert("Incorrect password.");
+                    }
                     
-                    // Update PFP or Admin status if needed
                     const updates = {};
                     if (pfpDataUrl && pfpDataUrl !== userData.pfp) updates.pfp = pfpDataUrl;
                     if (forceAdmin && !userData.isAdmin) updates.isAdmin = true;
@@ -278,11 +298,17 @@
                     
                     currentUser = { name: nameInput, isAdmin: userData.isAdmin || forceAdmin, pfp: pfpDataUrl || userData.pfp };
                 } else {
-                    // Create new user
                     const newUser = { pass: passInput, pfp: pfpDataUrl, banned: false, isAdmin: forceAdmin };
                     await set(userRef, newUser);
                     currentUser = { name: nameInput, isAdmin: forceAdmin, pfp: pfpDataUrl };
                 }
+
+                // Save active session to Local Storage
+                localStorage.setItem(SESSION_KEY, JSON.stringify({ 
+                    name: currentUser.name, 
+                    pass: passInput, 
+                    pfp: currentUser.pfp 
+                }));
 
                 document.getElementById('admin-toggle-btn').style.display = currentUser.isAdmin ? 'block' : 'none';
                 window.switchScreen('login-screen', 'inbox-screen');
@@ -294,20 +320,29 @@
             }
         };
 
-        if (fileInput.files && fileInput.files[0]) {
+        if (fileInput && fileInput.files && fileInput.files[0]) {
             const reader = new FileReader();
             reader.onload = function(e) { finalizeLogin(e.target.result); };
             reader.readAsDataURL(fileInput.files[0]);
         } else {
-            finalizeLogin("");
+            finalizeLogin(autoData ? autoData.pfp : "");
         }
     };
 
     window.logout = function() {
+        // Destroy the persistent session
+        localStorage.removeItem(SESSION_KEY);
         currentUser = null;
         if(chatListener) chatListener(); // Unsubscribe
+        
         document.getElementById('reg-name').value = '';
         document.getElementById('reg-pass').value = '';
+        
+        const label = document.getElementById('pfp-label');
+        label.innerText = "📷 Choose Profile Picture...";
+        label.style.borderColor = "rgba(255,255,255,0.2)";
+        label.style.color = "var(--text-muted)";
+
         window.switchScreen('inbox-screen', 'login-screen');
         window.switchScreen('chat-screen', 'login-screen');
         window.switchScreen('admin-screen', 'login-screen');
@@ -343,7 +378,6 @@
             const pfp = globalUsers[partner].pfp;
             const avatar = pfp ? `<div class="avatar" style="background-image: url('${pfp}')"></div>` : `<div class="avatar">${partner.charAt(0).toUpperCase()}</div>`;
 
-            // Fetch last message for preview
             let lastMsg = "Tap to start secure chat";
             const chatSnap = await get(ref(db, `chats/${chatId}`));
             if (chatSnap.exists()) {
@@ -374,7 +408,6 @@
         window.applyCurrentTheme();
         window.switchScreen('inbox-screen', 'chat-screen');
         
-        // Setup real-time listener for this chat
         const chatRef = ref(db, `chats/${activeChatId}`);
         chatListener = onValue(chatRef, (snapshot) => {
             renderMessages(snapshot.val());
@@ -382,7 +415,7 @@
     }
 
     window.goBackToInbox = function() {
-        if(chatListener) chatListener(); // Detach Firebase listener to save bandwidth
+        if(chatListener) chatListener(); 
         activePartner = null; 
         activeChatId = null;
         window.switchScreen('chat-screen', 'inbox-screen');
@@ -451,7 +484,6 @@
         await set(newMsgRef, newMsg);
         input.value = "";
 
-        // Simulate Read Receipts via Firebase updates
         setTimeout(async () => { await update(newMsgRef, { status: "Delivered" }); }, 800);
         setTimeout(async () => { await update(newMsgRef, { status: "Seen" }); }, 2000);
     }
@@ -500,14 +532,14 @@
 
             list.insertAdjacentHTML('beforeend', `
                 <div class="list-item" style="justify-content: space-between;">
-                    <div style="display: flex; align-items: center;">
+                    <div style="display: flex; align-items: center; width: 70%;">
                         ${avatar}
                         <div class="list-details">
                             <div class="list-name">${user}</div>
                             <div class="list-preview" style="color:${statusColor}">${isBanned ? 'Banned' : 'Active'}</div>
                         </div>
                     </div>
-                    <button class="btn ${isBanned ? '' : 'btn-danger'}" onclick="window.toggleBan('${user}', ${isBanned})">${isBanned ? 'Unban User' : 'Ban User'}</button>
+                    <button class="btn ${isBanned ? '' : 'btn-danger'}" onclick="window.toggleBan('${user}', ${isBanned})">${isBanned ? 'Unban' : 'Ban'}</button>
                 </div>
             `);
         });
